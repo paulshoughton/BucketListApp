@@ -9,12 +9,12 @@ import LocalAuthentication
 import MapKit
 import SwiftUI
 
-struct BucketListView: View {
-    @Binding var centreCoordinate: CLLocationCoordinate2D
-    @Binding var selectedPlace: MKPointAnnotation?
-    @Binding var showingPlaceDetails: Bool
-    @Binding var locations: [CodableMKPointAnnotation]
-    @Binding var showingEditScreen: Bool
+struct UnlockedView: View {
+    @State var centreCoordinate = CLLocationCoordinate2D()
+    @State var locations = [CodableMKPointAnnotation]()
+    @State var selectedPlace: MKPointAnnotation?
+    @State var showingPlaceDetails = false
+    @State var showingEditScreen = false
     
     var body: some View {
         ZStack {
@@ -51,66 +51,6 @@ struct BucketListView: View {
                 }
             }
         }
-    }
-}
-
-struct ContentView: View {
-    @State var centreCoordinate = CLLocationCoordinate2D()
-    @State var locations = [CodableMKPointAnnotation]()
-    @State var selectedPlace: MKPointAnnotation?
-    @State var showingPlaceDetails = false
-    @State var showingEditScreen = false
-    @State var isUnlocked = true
-    
-    var body: some View {
-        ZStack {
-            if isUnlocked {
-                BucketListView(
-                    centreCoordinate: $centreCoordinate,
-                    selectedPlace: $selectedPlace,
-                    showingPlaceDetails: $showingPlaceDetails,
-                    locations: $locations,
-                    showingEditScreen: $showingEditScreen
-                )
-                
-//                MapView(centreCoordinate: $centreCoordinate, selectedPlace: $selectedPlace, showingPlaceDetails: $showingPlaceDetails, annotations: locations)
-//                    .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
-//                Circle()
-//                    .fill(Color.blue)
-//                    .opacity(0.3)
-//                    .frame(width: 32, height: 32)
-//
-//                VStack {
-//                    Spacer()
-//                    Button(action: {
-//                        let newLocation = CodableMKPointAnnotation()
-//                        newLocation.title = "Example Location"
-//                        newLocation.coordinate = self.centreCoordinate
-//                        self.locations.append(newLocation)
-//
-//                        self.selectedPlace = newLocation
-//                        self.showingEditScreen = true
-//                    }) {
-//                        Image(systemName: "plus")
-//                            .padding()
-//                            .background(Color.black.opacity(0.75))
-//                            .foregroundColor(.white)
-//                            .font(.title)
-//                            .clipShape(/*@START_MENU_TOKEN@*/Circle()/*@END_MENU_TOKEN@*/)
-//                            .padding(.bottom)
-//                    }
-//                }
-            }
-            else {
-                Button("Unlock Places") {
-                    self.authenticate()
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .clipShape(Capsule())
-            }
-        }
         .alert(isPresented: $showingPlaceDetails) {
             Alert(
                 title: Text(selectedPlace?.title ?? "Unknown"),
@@ -120,7 +60,7 @@ struct ContentView: View {
                     self.showingEditScreen = true
                 })
         }
-        .sheet(isPresented: $showingEditScreen, onDismiss: saveData) { 
+        .sheet(isPresented: $showingEditScreen, onDismiss: saveData) {
             if self.selectedPlace != nil {
                 AnyView(EditView(placemark: self.selectedPlace!))
             }
@@ -129,6 +69,7 @@ struct ContentView: View {
             }
         }
         .onAppear(perform: loadData)
+        
     }
     
     func getDocumentsDirectory() -> URL {
@@ -153,9 +94,32 @@ struct ContentView: View {
             let filename = getDocumentsDirectory().appendingPathComponent("SavedPlaces")
             let data = try JSONEncoder().encode(self.locations)
             try data.write(to: filename, options: [.atomicWrite, .completeFileProtection])
+            print("Saved data.")
         }
         catch {
             print("Unable to save data.")
+        }
+    }
+}
+
+struct LockedView: View {
+    @Binding var isUnlocked: Bool
+    @State private var showAlert: Bool = false
+    @State private var alertTitle: String = ""
+    @State private var alertMessage: String = ""
+    
+    var body: some View {
+        VStack {
+            Button("Unlock Places") {
+                self.authenticate()
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .clipShape(Capsule())
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("Okay")))
         }
     }
     
@@ -173,12 +137,32 @@ struct ContentView: View {
                     }
                     else {
                         // error
+                        self.alertTitle = "Error"
+                        self.alertMessage = "You are not yourself"
+                        self.showAlert = true
                     }
                 }
             }
         }
         else {
-            // no biometrics
+            self.alertTitle = "No FaceID or TouchID"
+            self.alertMessage = "Your device does not support biometrics."
+            self.showAlert = true
+        }
+    }
+}
+
+struct ContentView: View {
+    @State var isUnlocked = false
+    
+    var body: some View {
+        ZStack {
+            if isUnlocked {
+                UnlockedView()
+            }
+            else {
+                LockedView(isUnlocked: $isUnlocked)
+            }
         }
     }
 }
