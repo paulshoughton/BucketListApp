@@ -55,12 +55,12 @@ struct BucketListView: View {
 }
 
 struct ContentView: View {
-    @State private var centreCoordinate = CLLocationCoordinate2D()
-    @State private var locations = [CodableMKPointAnnotation]()
-    @State private var selectedPlace: MKPointAnnotation?
-    @State private var showingPlaceDetails = false
-    @State private var showingEditScreen = false
-    @State private var isUnlocked = true
+    @State var centreCoordinate = CLLocationCoordinate2D()
+    @State var locations = [CodableMKPointAnnotation]()
+    @State var selectedPlace: MKPointAnnotation?
+    @State var showingPlaceDetails = false
+    @State var showingEditScreen = false
+    @State var isUnlocked = true
     
     var body: some View {
         ZStack {
@@ -99,7 +99,6 @@ struct ContentView: View {
 //                            .clipShape(/*@START_MENU_TOKEN@*/Circle()/*@END_MENU_TOKEN@*/)
 //                            .padding(.bottom)
 //                    }
-//
 //                }
             }
             else {
@@ -121,9 +120,12 @@ struct ContentView: View {
                     self.showingEditScreen = true
                 })
         }
-        .sheet(isPresented: $showingEditScreen, onDismiss: saveData) {
+        .sheet(isPresented: $showingEditScreen, onDismiss: saveData) { 
             if self.selectedPlace != nil {
-                EditView(placemark: self.selectedPlace!)
+                AnyView(EditView(placemark: self.selectedPlace!))
+            }
+            else {
+                AnyView(Text("No location selected..."))
             }
         }
         .onAppear(perform: loadData)

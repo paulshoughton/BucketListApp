@@ -25,6 +25,9 @@ struct EditView: View {
                     TextField("Place name", text: $placemark.wrappedTitle)
                     TextField("Description", text: $placemark.wrappedSubtitle)
                 }
+                Section(header: Text("Location")) {
+                    Text("\(placemark.coordinate.latitude), \(placemark.coordinate.longitude)")
+                }
                 Section(header: Text("Nearby...")) {
                     if loadingState == .loaded {
                         List(pages, id: \.pageid) { page in
